@@ -39,6 +39,19 @@ string_xpath_normalized = etree.XPath("normalize-space()")
 """Return a (space) normalized string in the node subtree"""
 
 
+def stringify_children(node):
+    """
+    Copied from https://stackoverflow.com/questions/4624062/get-all-text-inside-a-tag-in-lxml
+    To get the complete text including xml tags from  node and not only the text elements.
+    """
+    from lxml.etree import tostring
+    from itertools import chain
+    parts = ([node.text] +
+            list(chain(*([c.text, tostring(c), c.tail] for c in node.getchildren()))) +
+            [node.tail])
+    # filter removes possible Nones in texts and tails
+    return ''.join(filter(None, parts)).strip()
+
 def getText(node, xml_space="preserve"):
     """Extracts the plain text content out of the given node.
 
@@ -47,9 +60,11 @@ def getText(node, xml_space="preserve"):
     """
     xml_space = getXMLspace(node, xml_space)
     if xml_space == "default":
-        return six.text_type(string_xpath_normalized(node))  # specific to lxml.etree
+        return unicode(stringify_children(node))
+        # return six.text_type(string_xpath_normalized(node))  # specific to lxml.etree
     else:
-        return six.text_type(string_xpath(node))  # specific to lxml.etree
+        return unicode(stringify_children(node))
+        # return six.text_type(string_xpath(node))  # specific to lxml.etree
 
     # If we want to normalise space and only preserve it when the directive
     # xml:space="preserve" is given in node or in parents, consider this code:
